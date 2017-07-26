@@ -122,28 +122,32 @@ feed = """<?xml version="1.0" encoding="UTF-8" ?>
 
 item_tmpl = """
   <item>
+    <id>{id}</id>
     <title>{title}</title>
     <link>{link}</link>
-    <description>{description}</description>
     <author>{author}</author>
-    <content_preview>{content_preview}</content_preview>
     <content>{content}</content>
+    <updated>{updated}</updated>
+    <site_url>{site_url}</site_url>
   </item>"""
 
-link_fmt = 'https://www.boardgamegeek.com/geeklist/{geeklist}/item/{item}#item{item}'
+site_fmt = 'https://www.boardgamegeek.com/geeklist/{geeklist}'
+link_fmt = site_fmt + '/item/{item}#item{item}'
 item_list = []
 for game in games:
+    site_url = site_fmt.format(geeklist=game['auction_id'])
     item_link = link_fmt.format(
         geeklist=game['auction_id'],
         item=game['@id']
     )
     item_list.append(item_tmpl.format(
+        id=game['auction_id'] + '_' + game['@id'],
         title=game['@objectname'],
         link=item_link,
-        content_preview=game['body'][0:32],
+        author=game['@username'],
         content=game['body'],
         updated=game['@postdate'],
-        author=game['@username']
+        site_url=site_url
     ))
 
 feed_final = feed.format(
