@@ -126,8 +126,8 @@ item_tmpl = """
     <title>{title}</title>
     <link>{link}</link>
     <author>{author}</author>
-    <content>{content}</content>
-    <updated>{updated}</updated>
+    <description>{description}</description>
+    <pubDate>{pubDate}</pubDate>
     <site_url>{site_url}</site_url>
   </item>"""
 
@@ -145,8 +145,8 @@ for game in games:
         title=game['@objectname'],
         link=item_link,
         author=game['@username'],
-        content=game['body'],
-        updated=game['@postdate'],
+        description=game['body'],
+        pubDate=game['@postdate'],
         site_url=site_url
     ))
 
