@@ -108,25 +108,50 @@ for auction_id, auction_data in to_post.items():
         except:
             continue
 
-feed = {
-    'title': 'BGG Auction Aggregator',
-    'version': 1.0,
-    'feed_url': 'https://milogert.com/static/bggrss.json',
-    'articles': []
-}
+feed = """<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+
+<channel>
+  <title>{title}</title>
+  <link>{link}</link>
+  <description>{description}</description>
+  {items}
+</channel>
+
+</rss>"""
+
+item_tmpl = """
+  <item>
+    <title>{title}</title>
+    <link>{link}</link>
+    <description>{description}</description>
+    <author>{author}</author>
+    <content_preview>{content_preview}</content_preview>
+    <content>{content}</content>
+  </item>"""
 
 link_fmt = 'https://www.boardgamegeek.com/geeklist/{geeklist}/item/{item}#item{item}'
+item_list = []
 for game in games:
     item_link = link_fmt.format(
         geeklist=game['auction_id'],
         item=game['@id']
     )
-    feed['articles'].append({
-        'link': item_link,
-        'title': game['@objectname'],
-        'content_preview': game['body'][0:32],
-        'content': game['body'],
-        'updated': game['@postdate'],
-        'author': game['@username']
-    })
+    item_list.append(item_tmpl.format(
+        title=game['@objectname'],
+        link=item_link,
+        content_preview=game['body'][0:32],
+        content=game['body'],
+        updated=game['@postdate'],
+        author=game['@username']
+    ))
 
+feed_final = feed.format(
+    title='BGG Auction Aggregator',
+    description='Aggregates auctions.',
+    link='http://pig/bggrss/feed.xml',
+    items='\n'.join(item_list)
+)
+
+with open('feed.xml', 'w') as fd:
+    fd.write(feed_final)
