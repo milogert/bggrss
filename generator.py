@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
+import bbcode
 import requests
 import xmltodict
 import json
 import time
 import collections
+
+debugging = True
 
 root = 'http://www.boardgamegeek.com/xmlapi/'
 root2 = 'https://www.boardgamegeek.com/xmlapi2/'
@@ -33,7 +36,6 @@ try:
     print('read in old file: ' + len(old))
 except:
     print('new `old` array')
-print('old: ' + json.dumps(old, indent=2))
 to_post = {}
 
 # Get new auctions (just one to start).
@@ -45,7 +47,7 @@ while counter < 10:#len(metalist_json['item']):
     print('checking auction', auction_id)
     
     # Skip this auction if we have already looked at it.
-    if auction_id in old:
+    if auction_id in old and not debugging:
         print('skip auction')
         counter = counter + 1
         continue
@@ -74,12 +76,15 @@ while counter < 10:#len(metalist_json['item']):
         sys.exit()
 
     # Pull all the games in from this auction into a specific dict.
-    old.append(auction_id)
+    if not debugging:
+        old.append(auction_id)
     to_post[auction_id] = auction_json
 
 # Write out the old ids.
-print('old: ' + json.dumps(old, indent=2))
-json.dump(old, open('./old', 'w'))
+if not debugging:
+    json.dump(old, open('./old', 'w'))
+
+print('going to post:', len(to_post.keys()))
 
 wishlist_json = {}
 # Get games in wishlist.
@@ -97,13 +102,23 @@ while True:
 
 # Intersection between new auctions and wishlist.
 wishlist_ids = [i['@objectid'] for i in wishlist_json]
+wishlist_map = {i['@objectid']: i for i in wishlist_json}
 games = []
+
+# Loop through all auctions to post.
 for auction_id, auction_data in to_post.items():
+    # Loop through all items in the auction.
     for item in auction_data['item']:
         try:
-            item.update({'auction_id': auction_id})
             item_id = item['@objectid']
-            if item_id in wishlist_ids:
+            if item_id in wishlist_map.keys():
+                # Get the wishlist status.
+                wishlist_status = wishlist_map[item_id]['status']['@wishlistpriority']
+                print(item_id, wishlist_status)
+                item.update({
+                    'auction_id': auction_id,
+                    'wishlist_status': wishlist_status
+                })
                 games.append(item)
         except:
             continue
@@ -140,12 +155,16 @@ for game in games:
         geeklist=game['auction_id'],
         item=game['@id']
     )
+    description = '{body}<br/><br/><hr/>Wishlist Level: {wishlist_status}'.format(
+        body=bbcode.render_html(game['body']),
+        wishlist_status=game['wishlist_status']
+    )
     item_list.append(item_tmpl.format(
         id=game['auction_id'] + '_' + game['@id'],
         title=game['@objectname'],
         link=item_link,
         author=game['@username'],
-        description=game['body'],
+        description=description,
         pubDate=game['@postdate'],
         site_url=site_url
     ))
@@ -159,3 +178,5 @@ feed_final = feed.format(
 
 with open('feed.xml', 'w') as fd:
     fd.write(feed_final)
+
+print(feed_final)
