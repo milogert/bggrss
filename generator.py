@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pytTruihon
 
 import bbcode
 import requests
@@ -42,7 +42,6 @@ to_post = {}
 counter = 0
 counter_limit = 10 if debugging else len(metalist_json['item'])
 while counter < counter_limit:
-    time.sleep(.25)
     item = metalist_json['item'][counter]
     auction_id = item['@objectid']
     print('checking auction', auction_id)
@@ -54,7 +53,6 @@ while counter < counter_limit:
         continue
 
     # Get games in new auctions.
-    #print(requests.get(root + 'geeklist/' + auction_id).textdd)
     auction_request = requests.get(root + 'geeklist/' + auction_id)
 
     # Move to the next loop if we are accepted but processing.
@@ -62,10 +60,6 @@ while counter < counter_limit:
         print('processing ' + auction_id)
         continue
 
-    # Increment the counter.
-    counter = counter + 1
-
-    # Pull and parse the text.
     auction_data = auction_request.text
     try:
         auction_json = xmltodict.parse(auction_data)['geeklist']
@@ -76,10 +70,15 @@ while counter < counter_limit:
         import sys
         sys.exit()
 
+    # Increment the counter.
+    counter = counter + 1
+
+    # Pull and parse the text.
     # Pull all the games in from this auction into a specific dict.
     if not debugging:
         old.append(auction_id)
     to_post[auction_id] = auction_json
+    time.sleep(.25)
 
 # Write out the old ids.
 if not debugging:
