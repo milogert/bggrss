@@ -6,6 +6,7 @@ import xmltodict
 import json
 import time
 import collections
+from xml.sax.saxutils import escape
 
 debugging = False
 
@@ -18,9 +19,13 @@ class Generator:
     wishlist_url = wishlist_root + wishlist_args
 
     username = None
+    old = None
+    feed = None
 
     def __init__(self, username):
         self.username = username
+        self.old = self.username + '_old'
+        self.feed = self.username + '.xml'
 
     def generate(self):
         # Get metalist.
@@ -38,7 +43,7 @@ class Generator:
         # Create datastructure for auctions.
         old = []
         try:
-            with open('old') as fd:
+            with open(self.username) as fd:
                 old = json.load(fd)
             print('read in old file: ' + len(old))
         except:
@@ -89,7 +94,7 @@ class Generator:
 
         # Write out the old ids.
         if not debugging:
-            json.dump(old, open('./old', 'w'))
+            json.dump(old, open(self.old, 'w'))
 
         print('going to post:', len(to_post.keys()))
 
@@ -171,7 +176,7 @@ class Generator:
                 title=game['@objectname'],
                 link=item_link,
                 author=game['@username'],
-                description=description,
+                description=escape(description),
                 pubDate=game['@postdate'],
                 site_url=site_url
             ))
@@ -179,14 +184,14 @@ class Generator:
         feed_final = feed.format(
             title='BGG Auction Aggregator',
             description='Aggregates auctions.',
-            link='http://pig/bggrss/feed.xml',
+            link='http://pig/bggrss/{feed}'.format(feed=self.feed),
             items='\n'.join(item_list)
         )
 
-        with open('feed.xml', 'w') as fd:
+        with open(self.feed, 'w') as fd:
             fd.write(feed_final)
 
-        print(feed_final)
+        return feed_final
 
 if __name__ == '__main__':
-    Generator('miloshot').generate()
+    print(Generator('miloshot').generate())
