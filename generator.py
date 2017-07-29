@@ -7,7 +7,7 @@ import json
 import time
 import collections
 
-debugging = True
+debugging = False
 
 root = 'http://www.boardgamegeek.com/xmlapi/'
 root2 = 'https://www.boardgamegeek.com/xmlapi2/'
@@ -40,7 +40,8 @@ to_post = {}
 
 # Get new auctions (just one to start).
 counter = 0
-while counter < 10:#len(metalist_json['item']):
+counter_limit = 10 if debugging else len(metalist_json['item'])
+while counter < counter_limit:
     time.sleep(.25)
     item = metalist_json['item'][counter]
     auction_id = item['@objectid']
@@ -155,7 +156,7 @@ for game in games:
         geeklist=game['auction_id'],
         item=game['@id']
     )
-    description = '{body}<br/><br/><hr/>Wishlist Level: {wishlist_status}'.format(
+    description = '{body}<br/><br/><hr>Wishlist Level: {wishlist_status}'.format(
         body=bbcode.render_html(game['body']),
         wishlist_status=game['wishlist_status']
     )
