@@ -14,9 +14,28 @@ class Generator:
     root = 'http://www.boardgamegeek.com/xmlapi/'
     root2 = 'https://www.boardgamegeek.com/xmlapi2/'
 
-    wishlist_root = root2 + 'collection?'
-    wishlist_args = 'username={username}&wishlist=1'
-    wishlist_url = wishlist_root + wishlist_args
+    feed_tmpl = """<?xml version="1.0" encoding="UTF-8" ?>
+    <rss version="2.0">
+
+    <channel>
+      <title>{title}</title>
+      <link>{link}</link>
+      <description>{description}</description>
+      {items}
+    </channel>
+
+    </rss>"""
+
+    item_tmpl = """
+      <item>
+        <id>{id}</id>
+        <title>{title}</title>
+        <link>{link}</link>
+        <author>{author}</author>
+        <description>{description}</description>
+        <pubDate>{pubDate}</pubDate>
+        <site_url>{site_url}</site_url>
+      </item>"""
 
     username = None
     old = None
@@ -31,8 +50,9 @@ class Generator:
         # Get metalist.
         metalist_json = {}
         while True:
-            metalist_request = requests.get(self.root + 'geeklist/66420')
-            print(metalist_request.status_code)
+            metalist_url = self.root + 'geeklist/66420'
+            print('metalist request:', metalist_url)
+            metalist_request = requests.get(metalist_url)
             if metalist_request.status_code != 200:
                 time.sleep(1)
                 continue
@@ -43,7 +63,7 @@ class Generator:
         # Create datastructure for auctions.
         old = []
         try:
-            with open(self.username) as fd:
+            with open(self.username + '_old') as fd:
                 old = json.load(fd)
             print('read in old file: ' + len(old))
         except:
@@ -65,7 +85,9 @@ class Generator:
                 continue
 
             # Get games in new auctions.
-            auction_request = requests.get(self.root + 'geeklist/' + auction_id)
+            auction_url = self.root + 'geeklist/' + auction_id
+            print('auction request:', auction_url)
+            auction_request = requests.get(auction_url)
 
             # Move to the next loop if we are accepted but processing.
             if auction_request.status_code == 202:
@@ -94,6 +116,7 @@ class Generator:
 
         # Write out the old ids.
         if not debugging:
+            print('writing processed auctions to', self.old)
             json.dump(old, open(self.old, 'w'))
 
         print('going to post:', len(to_post.keys()))
@@ -101,15 +124,21 @@ class Generator:
         wishlist_json = {}
         # Get games in wishlist.
         while True:
-            wishlist_request = requests.get(self.wishlist_url.format(
+            wishlist_url = self.root2 + 'collection?username={username}&wishlist=1'.format(
                 username=self.username
-            ))
+            )
+            print('wishlist request:', wishlist_url)
+            wishlist_request = requests.get(wishlist_url)
             print(wishlist_request.status_code)
             if wishlist_request.status_code != 200:
                 time.sleep(1)
                 continue
 
-            wishlist_json = xmltodict.parse(wishlist_request.text)['items']['item']
+            wishlist_items = xmltodict.parse(wishlist_request.text)['items']
+            if 'item' not in wishlist_items:
+                return self.feed_tmpl
+
+            wishlist_json = wishlist_items['item']
             break
 
         # Intersection between new auctions and wishlist.
@@ -135,29 +164,6 @@ class Generator:
                 except:
                     continue
 
-        feed = """<?xml version="1.0" encoding="UTF-8" ?>
-        <rss version="2.0">
-
-        <channel>
-          <title>{title}</title>
-          <link>{link}</link>
-          <description>{description}</description>
-          {items}
-        </channel>
-
-        </rss>"""
-
-        item_tmpl = """
-          <item>
-            <id>{id}</id>
-            <title>{title}</title>
-            <link>{link}</link>
-            <author>{author}</author>
-            <description>{description}</description>
-            <pubDate>{pubDate}</pubDate>
-            <site_url>{site_url}</site_url>
-          </item>"""
-
         site_fmt = 'https://www.boardgamegeek.com/geeklist/{geeklist}'
         link_fmt = site_fmt + '/item/{item}#item{item}'
         item_list = []
@@ -171,7 +177,7 @@ class Generator:
                 body=bbcode.render_html(game['body']),
                 wishlist_status=game['wishlist_status']
             )
-            item_list.append(item_tmpl.format(
+            item_list.append(self.item_tmpl.format(
                 id=game['auction_id'] + '_' + game['@id'],
                 title=game['@objectname'],
                 link=item_link,
@@ -181,7 +187,7 @@ class Generator:
                 site_url=site_url
             ))
 
-        feed_final = feed.format(
+        feed_final = self.feed_tmpl.format(
             title='BGG Auction Aggregator',
             description='Aggregates auctions.',
             link='http://pig/bggrss/{feed}'.format(feed=self.feed),
