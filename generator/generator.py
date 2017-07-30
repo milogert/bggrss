@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import datetime
+import time
+import math
 import bbcode
 import requests
 import xmltodict
@@ -7,6 +10,7 @@ import json
 import time
 import collections
 from xml.sax.saxutils import escape
+import sqlite3
 
 debugging = False
 
@@ -41,13 +45,66 @@ class Generator:
     old = None
     feed = None
 
+    db = None
+    k_table_dict = {
+        'tn': 'timer',
+        'username': 'username',
+        'time': 'last_request_time'
+    }
+    k_username = 0
+    k_time = 1
+
     def __init__(self, username, link=''):
         self.username = username
         self.link = link
         self.old = self.username + '_old'
         self.feed = self.username + '.xml'
+        self.db = sqlite3.connect('./users/db.sqlite')
+
+        # Create the table if it does not exist.
+        c = self.db.cursor()
+        c.execute(
+            (
+                'CREATE TABLE IF NOT EXISTS {tn} ('
+                '{username} TEXT UNIQUE NOT NULL,'
+                '{time} INTEGER'
+                ')'
+            ).format(**self.k_table_dict)
+        )
+        self.db.commit()
 
     def generate(self):
+        # Check last request time.
+        c = self.db.cursor()
+        c.execute('SELECT * FROM {tn} WHERE {username}="{username_q}"'.format(
+            username_q=self.username,
+            **self.k_table_dict
+        ))
+        row = c.fetchone()
+        if not row:
+            print('no row found, inserting')
+            c.execute(
+                (
+                    'INSERT INTO {tn} ({username}, {time})'
+                    'VALUES ("{username_n}", {time_n})'
+                ).format(
+                    username_n=self.username,
+                    time_n=math.ceil(time.time()),
+                    **self.k_table_dict
+                )
+            )
+            self.db.commit()
+        else:
+            print('row found')
+            # Get the date from the row.
+            prev_time = datetime.datetime.fromtimestamp(row[self.k_time])
+            minimum_next_time = prev_time.replace(minute=prev_time.minute + 5)
+            if datetime.datetime.now() < minimum_next_time:
+                fd = open('./users/' + self.feed)
+                print('returning cached feed:', self.feed)
+                return fd.read()
+        
+
         # Get metalist.
         metalist_json = {}
         while True:
@@ -64,7 +121,7 @@ class Generator:
         # Create datastructure for auctions.
         old = []
         try:
-            with open('./users/' + self.username + '_old') as fd:
+            with open('./users/' + self.old) as fd:
                 old = json.load(fd)
             print(old)
             print('read in old file', fd.name, ': ', len(old))
