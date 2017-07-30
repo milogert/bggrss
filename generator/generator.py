@@ -41,8 +41,9 @@ class Generator:
     old = None
     feed = None
 
-    def __init__(self, username):
+    def __init__(self, username, link=''):
         self.username = username
+        self.link = link
         self.old = self.username + '_old'
         self.feed = self.username + '.xml'
 
@@ -63,24 +64,33 @@ class Generator:
         # Create datastructure for auctions.
         old = []
         try:
-            with open(self.username + '_old') as fd:
+            with open('./users/' + self.username + '_old') as fd:
                 old = json.load(fd)
-            print('read in old file: ' + len(old))
-        except:
-            print('new `old` array')
+            print(old)
+            print('read in old file', fd.name, ': ', len(old))
+        except (IOError, TypeError) as e:
+            print('new `old` array', e.strerror)
         to_post = {}
 
         # Get new auctions (just one to start).
         counter = 0
         counter_limit = 10 if debugging else len(metalist_json['item'])
+        print('checking auctions... ', end='')
         while counter < counter_limit:
             item = metalist_json['item'][counter]
             auction_id = item['@objectid']
-            print('checking auction', auction_id)
+            print(auction_id, end='')
             
             # Skip this auction if we have already looked at it.
-            if auction_id in old and not debugging:
-                print('skip auction')
+            is_old = auction_id in old
+            is_closed = 'closed' in item['@objectname'].lower()
+            if (is_old or is_closed) and not debugging:
+                label = 'other'
+                if is_old:
+                    label = 'old'
+                elif is_closed:
+                    label = 'closed'
+                print(' (' + label + ')', end=', ')
                 counter = counter + 1
                 continue
 
@@ -117,7 +127,7 @@ class Generator:
         # Write out the old ids.
         if not debugging:
             print('writing processed auctions to', self.old)
-            json.dump(old, open(self.old, 'w'))
+            json.dump(old, open('./users/' + self.old, 'w'))
 
         print('going to post:', len(to_post.keys()))
 
@@ -155,7 +165,6 @@ class Generator:
                     if item_id in wishlist_map.keys():
                         # Get the wishlist status.
                         wishlist_status = wishlist_map[item_id]['status']['@wishlistpriority']
-                        print(item_id, wishlist_status)
                         item.update({
                             'auction_id': auction_id,
                             'wishlist_status': wishlist_status
@@ -188,13 +197,14 @@ class Generator:
             ))
 
         feed_final = self.feed_tmpl.format(
-            title='BGG Auction Aggregator',
-            description='Aggregates auctions.',
-            link='http://pig/bggrss/{feed}'.format(feed=self.feed),
+            title=self.username + '\'s Wishlist-Auction Matches',
+            description='Aggregates auctions for ' + self.username,
+            link=self.link,
             items='\n'.join(item_list)
         )
 
-        with open(self.feed, 'w') as fd:
+        with open('./users/' + self.feed, 'w') as fd:
+            print('writing feed to', fd.name)
             fd.write(feed_final)
 
         return feed_final

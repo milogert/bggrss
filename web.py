@@ -29,7 +29,7 @@ def rss(username):
     if not username:
         return redirect('/')
 
-    res = Response(generator.Generator(username).generate())
+    res = Response(generator.Generator(username, link=request.url).generate())
     res.headers['Content-Type'] = 'application/xml'
     return res
 
