@@ -64,9 +64,11 @@ class Generator:
     def __init__(self, username, link=''):
         self.username = username
         self.link = link
-        self.old = self.path.join(self.users_dir, self.username + '_old')
-        self.feed = self.path.join(self.users_dir, self.username + '.xml')
-        self.db = sqlite3.connect(self.path.join(self.users_dir, 'db.sqlite'))
+        self.old = os.path.join(self.users_dir, self.username + '_old')
+        self.feed = os.path.join(self.users_dir, self.username + '.xml')
+        db_path = os.path.join(self.users_dir, 'db.sqlite')
+        print('opening database:', db_path)
+        self.db = sqlite3.connect(db_path)
 
         # Create the table if it does not exist.
         c = self.db.cursor()
@@ -128,7 +130,7 @@ class Generator:
         # Create datastructure for auctions.
         old = []
         try:
-            with open('./users/' + self.old) as fd:
+            with open(self.old) as fd:
                 old = json.load(fd)
             print(old)
             print('read in old file', fd.name, ': ', len(old))
@@ -191,7 +193,7 @@ class Generator:
         # Write out the old ids.
         if not debugging:
             print('writing processed auctions to', self.old)
-            json.dump(old, open('./users/' + self.old, 'w'))
+            json.dump(old, open(self.old, 'w'))
 
         print('going to post:', len(to_post.keys()))
 
@@ -267,7 +269,7 @@ class Generator:
             items='\n'.join(item_list)
         )
 
-        with open('./users/' + self.feed, 'w') as fd:
+        with open(self.feed, 'w') as fd:
             print('writing feed to', fd.name)
             fd.write(feed_final)
 
