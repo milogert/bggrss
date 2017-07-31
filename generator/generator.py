@@ -11,10 +11,16 @@ import time
 import collections
 from xml.sax.saxutils import escape
 import sqlite3
+import os
 
 debugging = False
 
 class Generator:
+    __location__ = os.path.realpath(os.path.join(
+        os.getcwd(),
+        os.path.dirname(__file__)
+    ))
+
     root = 'http://www.boardgamegeek.com/xmlapi/'
     root2 = 'https://www.boardgamegeek.com/xmlapi2/'
 
@@ -42,6 +48,7 @@ class Generator:
       </item>"""
 
     username = None
+    users_dir = os.path.join(__location__, 'users')
     old = None
     feed = None
 
@@ -57,9 +64,9 @@ class Generator:
     def __init__(self, username, link=''):
         self.username = username
         self.link = link
-        self.old = self.username + '_old'
-        self.feed = self.username + '.xml'
-        self.db = sqlite3.connect('./users/db.sqlite')
+        self.old = self.path.join(self.users_dir, self.username + '_old')
+        self.feed = self.path.join(self.users_dir, self.username + '.xml')
+        self.db = sqlite3.connect(self.path.join(self.users_dir, 'db.sqlite'))
 
         # Create the table if it does not exist.
         c = self.db.cursor()

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from flask import Flask, request, redirect, Response
 from flask import render_template as rt
 from generator import generator
