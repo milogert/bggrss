@@ -145,7 +145,7 @@ class Generator:
         while counter < counter_limit:
             item = metalist_json['item'][counter]
             auction_id = item['@objectid']
-            print(auction_id, end='')
+            print(auction_id, end=' ')
             
             # Skip this auction if we have already looked at it.
             is_old = auction_id in old
@@ -156,18 +156,18 @@ class Generator:
                     label = 'old'
                 elif is_closed:
                     label = 'closed'
-                print(' (' + label + ')', end=', ')
+                print('(' + label + ')', end=', ')
                 counter = counter + 1
                 continue
 
             # Get games in new auctions.
             auction_url = self.root + 'geeklist/' + auction_id
-            print('auction request:', auction_url)
+            print('\nauction request:', auction_url)
             auction_request = requests.get(auction_url)
 
             # Move to the next loop if we are accepted but processing.
             if auction_request.status_code == 202:
-                print('processing ' + auction_id)
+                print('\tprocessing ' + auction_id)
                 continue
 
             auction_data = auction_request.text
@@ -175,10 +175,10 @@ class Generator:
                 auction_json = xmltodict.parse(auction_data)['geeklist']
                 print('\tprocessed {}\t {}'.format(auction_id, auction_json['title']))
             except:
-                print(auction_data)
-                print(auction_request.status_code)
-                import sys
-                sys.exit()
+                print('failure to process auction', auction_request.status_code)
+                print('\t' + auction_data)
+                counter = counter + 1
+                continue
 
             # Increment the counter.
             counter = counter + 1
