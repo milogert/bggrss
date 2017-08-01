@@ -72,14 +72,12 @@ class Generator:
 
         # Create the table if it does not exist.
         c = self.db.cursor()
-        c.execute(
-            (
-                'CREATE TABLE IF NOT EXISTS {tn} ('
-                '{username} TEXT UNIQUE NOT NULL,'
-                '{time} INTEGER'
-                ')'
-            ).format(**self.k_table_dict)
-        )
+        c.execute((
+            'CREATE TABLE IF NOT EXISTS {tn} ('
+            '{username} TEXT UNIQUE NOT NULL,'
+            '{time} INTEGER'
+            ')'
+        ).format(**self.k_table_dict))
         self.db.commit()
 
     def generate(self):
@@ -92,16 +90,14 @@ class Generator:
         row = c.fetchone()
         if not row:
             print('no row found, inserting')
-            c.execute(
-                (
-                    'INSERT INTO {tn} ({username}, {time})'
-                    'VALUES ("{username_n}", {time_n})'
-                ).format(
-                    username_n=self.username,
-                    time_n=math.ceil(time.time()),
-                    **self.k_table_dict
-                )
-            )
+            c.execute((
+                'INSERT INTO {tn} ({username}, {time})'
+                'VALUES ("{username_n}", {time_n})'
+            ).format(
+                username_n=self.username,
+                time_n=math.ceil(time.time()),
+                **self.k_table_dict
+            ))
             self.db.commit()
         else:
             print('row found')
@@ -109,9 +105,21 @@ class Generator:
             prev_time = datetime.datetime.fromtimestamp(row[self.k_time])
             minimum_next_time = prev_time.replace(minute=prev_time.minute + 5)
             if datetime.datetime.now() < minimum_next_time:
-                fd = open('./users/' + self.feed)
+                fd = open(self.feed)
                 print('returning cached feed:', self.feed)
                 return fd.read()
+
+            print('updating row')
+            c.execute((
+                'UPDATE {tn}\n'
+                'SET {time} = {time_n}\n'
+                'WHERE {username} = "{username_q}"'
+            ).format(
+                time_n=math.ceil(time.time()),
+                username_q=self.username,
+                **self.k_table_dict
+            ))
+            self.db.commit()
         
 
         # Get metalist.
