@@ -1,4 +1,4 @@
-#!/usr/bin/env pytTruihon
+#!/usr/bin/env python
 
 import bbcode
 import requests
@@ -7,7 +7,7 @@ import json
 import time
 import collections
 
-debugging = False
+debugging = True
 
 root = 'http://www.boardgamegeek.com/xmlapi/'
 root2 = 'https://www.boardgamegeek.com/xmlapi2/'
@@ -67,8 +67,9 @@ while counter < counter_limit:
     except:
         print(auction_data)
         print(auction_request.status_code)
-        import sys
-        sys.exit()
+        print("probably not an auction")
+        #import sys
+        #sys.exit()
 
     # Increment the counter.
     counter = counter + 1
