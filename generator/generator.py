@@ -103,7 +103,7 @@ class Generator:
             print('row found')
             # Get the date from the row.
             prev_time = datetime.datetime.fromtimestamp(row[self.k_time])
-            minimum_next_time = prev_time.replace(minute=prev_time.minute + 5)
+            minimum_next_time = prev_time + datetime.timedelta(minutes=5)
             if datetime.datetime.now() < minimum_next_time:
                 fd = open(self.feed)
                 print('returning cached feed:', self.feed)
@@ -180,7 +180,7 @@ class Generator:
 
             auction_data = auction_request.text
             try:
-                auction_json = xmltodict.parse(auction_data)['geeklist']
+                auction_json = xmltodict.parse(auction_data)
                 print('\tprocessed {}\t {}'.format(auction_id, auction_json['title']))
             except:
                 print('failure to process auction', auction_request.status_code)
@@ -232,8 +232,9 @@ class Generator:
 
         # Loop through all auctions to post.
         for auction_id, auction_data in to_post.items():
+            geek_list = auction_data['geeklist']
             # Loop through all items in the auction.
-            for item in auction_data['item']:
+            for item in geek_list:
                 try:
                     item_id = item['@objectid']
                     if item_id in wishlist_map.keys():
@@ -241,7 +242,8 @@ class Generator:
                         wishlist_status = wishlist_map[item_id]['status']['@wishlistpriority']
                         item.update({
                             'auction_id': auction_id,
-                            'wishlist_status': wishlist_status
+                            'wishlist_status': wishlist_status,
+                            'auction_title': auction_data['title'],
                         })
                         games.append(item)
                 except:
@@ -254,11 +256,12 @@ class Generator:
             site_url = site_fmt.format(geeklist=game['auction_id'])
             item_link = link_fmt.format(
                 geeklist=game['auction_id'],
-                item=game['@id']
+                item=game['@id'],
             )
-            description = '{body}<br/><br/><hr>Wishlist Level: {wishlist_status}'.format(
+            description = '{body}<br/><br/><hr>Auction Source: {auction_title}<br/>Wishlist Level: {wishlist_status}'.format(
                 body=bbcode.render_html(game['body']),
-                wishlist_status=game['wishlist_status']
+                auction_title=game['auction_title'],
+                wishlist_status=game['wishlist_status'],
             )
             item_list.append(self.item_tmpl.format(
                 id=game['auction_id'] + '_' + game['@id'],
@@ -267,7 +270,7 @@ class Generator:
                 author=game['@username'],
                 description=escape(description),
                 pubDate=game['@postdate'],
-                site_url=site_url
+                site_url=site_url,
             ))
 
         feed_final = self.feed_tmpl.format(
