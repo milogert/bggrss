@@ -162,7 +162,7 @@ class Generator:
         link_fmt = site_fmt + "/item/{item}#item{item}"
         site_url = site_fmt.format(geeklist=game["auction_id"])
         item_link = link_fmt.format(geeklist=game["auction_id"], item=game["@id"])
-        description = "{body}<br/><br/><hr>Auction Source: {auction_title}<br/>Wishlist Level: {wishlist_status}".format(
+        description = "{body}<br/><br/><hr><b>Auction Source:</b> {auction_title}<br/><b>Wishlist Level:</b> {wishlist_status}".format(
             body=bbcode.render_html(game["body"]),
             auction_title=game["auction_title"],
             wishlist_status=game["wishlist_status"],
