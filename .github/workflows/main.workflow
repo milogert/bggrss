@@ -4,7 +4,7 @@ workflow "deploy" {
 }
 
 action "ssh" {
-  uses = "maddox/actions/ssh"
+  uses = "maddox/actions/ssh@master"
   secrets = ["PUBLIC_KEY", "PRIVATE_KEY", "HOST", "USER"]
   args = "cd bggrss && git pull && sudo systemctl restart bggrss.service"
 }
