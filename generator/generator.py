@@ -20,8 +20,8 @@ class Generator:
         os.path.join(os.getcwd(), os.path.dirname(__file__))
     )
 
-    root = "http://www.boardgamegeek.com/xmlapi/"
-    root2 = "https://www.boardgamegeek.com/xmlapi2/"
+    root = "http://boardgamegeek.com/xmlapi/"
+    root2 = "https://boardgamegeek.com/xmlapi2/"
 
     feed_tmpl = """<?xml version="1.0" encoding="UTF-8" ?>
     <rss version="2.0">
@@ -158,7 +158,7 @@ class Generator:
             return wishlist_items["item"]
 
     def _convert_item(self, game):
-        site_fmt = "https://www.boardgamegeek.com/geeklist/{geeklist}"
+        site_fmt = "https://boardgamegeek.com/geeklist/{geeklist}"
         link_fmt = site_fmt + "/item/{item}#item{item}"
         site_url = site_fmt.format(geeklist=game["auction_id"])
         item_link = link_fmt.format(geeklist=game["auction_id"], item=game["@id"])
