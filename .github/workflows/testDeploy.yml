@@ -1,0 +1,28 @@
+name: Test and Deploy
+
+on:
+  push:	
+    branches:	
+      - master
+
+jobs:
+  testDeploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout master
+      uses: actions/checkout@master
+    - name: Test
+      uses: docker/whalesay@master
+      with:
+        entrypoint: cowsay
+        args: TEST HERE
+    - name: Deploy
+      uses: maddox/actions/ssh@master
+      env:
+        PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
+        PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        HOST: ${{ secrets.HOST }}
+        USER: ${{ secrets.USER }}
+      with:
+        args: "cd bggrss && git pull && sudo systemctl restart bggrss.service"
