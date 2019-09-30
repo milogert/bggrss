@@ -22,29 +22,6 @@ class Generator:
         os.path.join(os.getcwd(), os.path.dirname(__file__))
     )
 
-    feed_tmpl = """<?xml version="1.0" encoding="UTF-8" ?>
-    <rss version="2.0">
-
-    <channel>
-      <title>{title}</title>
-      <link>{link}</link>
-      <description>{description}</description>
-      {items}
-    </channel>
-
-    </rss>"""
-
-    item_tmpl = """
-      <item>
-        <id>{id}</id>
-        <title>{title}</title>
-        <link>{link}</link>
-        <author>{author}</author>
-        <description>{description}</description>
-        <pubDate>{pubDate}</pubDate>
-        <site_url>{site_url}</site_url>
-      </item>"""
-
     username = None
     users_dir = os.path.join(__location__, "users")
     old = None
@@ -94,7 +71,7 @@ class Generator:
                 ).format(
                     username_n=self.username,
                     time_n=math.ceil(time.time()),
-                    **self.k_table_dict
+                    **self.k_table_dict,
                 )
             )
             self.db.commit()
@@ -118,7 +95,7 @@ class Generator:
                 ).format(
                     time_n=math.ceil(time.time()),
                     username_q=self.username,
-                    **self.k_table_dict
+                    **self.k_table_dict,
                 )
             )
             self.db.commit()
@@ -152,29 +129,32 @@ class Generator:
             wishlist_items = xmltodict.parse(wishlist_request.text)["items"]
             if "item" not in wishlist_items:
                 ic("not a real wishlist item set", wishlist_items)
-                return self.feed_tmpl
+                return {}
 
             return wishlist_items["item"]
 
     def _convert_item(self, game):
-        site_fmt = "https://boardgamegeek.com/geeklist/{geeklist}"
-        link_fmt = site_fmt + "/item/{item}#item{item}"
-        site_url = site_fmt.format(geeklist=game["auction_id"])
-        item_link = link_fmt.format(geeklist=game["auction_id"], item=game["@id"])
-        description = "{body}<br/><br/><hr><b>Auction Source:</b> {auction_title}<br/><b>Wishlist Level:</b> {wishlist_status}".format(
-            body=renderer.do_render(game["body"]),
-            auction_title=game["auction_title"],
-            wishlist_status=game["wishlist_status"],
+        site_url = f"https://boardgamegeek.com/geeklist/{game['auction_id']}"
+        item_url = site_url + f"/item/{game['@id']}#item{game['@id']}"
+        description = (
+            f"{renderer.do_render(game['body'])}<br/><br/>"
+            "<hr><b>Auction Source:</b> {game['auction_title']}<br/>"
+            "<b>Wishlist Level:</b> {game['wishlist_status']}"
         )
-        return self.item_tmpl.format(
-            id=game["auction_id"] + "_" + game["@id"],
-            title=game["@objectname"],
-            link=item_link,
-            author=game["@username"],
-            description=escape(description),
-            pubDate=game["@postdate"],
-            site_url=site_url,
-        )
+        title = game["@objectname"]
+        author = game["@username"]
+        pubDate = game["@postdate"]
+        return f"""
+            <item>
+                <id>{game["auction_id"] + "_" + game["@id"]}</id>
+                <title>{title}</title>
+                <link>{item_url}</link>
+                <author>{author}</author>
+                <description>{escape(description)}</description>
+                <pubDate>{pubDate}</pubDate>
+                <site_url>{site_url}</site_url>
+            </item>
+        """
 
     def generate(self):
         self._update_last_time()
@@ -228,7 +208,7 @@ class Generator:
             try:
                 auction_json = xmltodict.parse(auction_data)["geeklist"]
                 # ic(auction_json)
-                ic("processed {}\t {}".format(auction_id, auction_json["title"]))
+                ic(f"processed {auction_id}\t {auction_json['title']}")
             except Exception as e:
                 ic("failure to process auction", auction_request.status_code, e)
                 counter = counter + 1
@@ -283,11 +263,20 @@ class Generator:
         # List of items.
         item_list = [self._convert_item(game) for game in games]
 
-        feed_final = self.feed_tmpl.format(
-            title=self.username + "'s Wishlist-Auction Matches",
-            description="Aggregates auctions for " + self.username,
-            link=self.link,
-            items="\n".join(item_list),
+        title = self.username + "'s Wishlist-Auction Matches"
+        description = "Aggregates auctions for " + self.username
+        link = self.link
+        items = "\n".join(item_list)
+        feed_final = (
+            f"<?xml version='1.0' encoding='UTF-8' ?>"
+            "<rss version='2.0'>"
+            "<channel>"
+            "<title>{title}</title>"
+            "<link>{link}</link>"
+            "<description>{description}</description>"
+            "{items}"
+            "</channel>"
+            "</rss>"
         )
 
         with open(self.feed, "w") as fd:
