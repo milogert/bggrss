@@ -2,7 +2,6 @@
 
 import datetime
 import math
-import bbcode
 import requests
 import xmltodict
 import json
@@ -12,16 +11,16 @@ import sqlite3
 import os
 from icecream import ic
 
-debugging = False
+import renderer
+import bgg
+
+debugging = True
 
 
 class Generator:
     __location__ = os.path.realpath(
         os.path.join(os.getcwd(), os.path.dirname(__file__))
     )
-
-    root = "http://boardgamegeek.com/xmlapi/"
-    root2 = "https://boardgamegeek.com/xmlapi2/"
 
     feed_tmpl = """<?xml version="1.0" encoding="UTF-8" ?>
     <rss version="2.0">
@@ -126,7 +125,7 @@ class Generator:
 
     def _get_metalist(self):
         while True:
-            metalist_url = self.root + "geeklist/66420"
+            metalist_url = bgg.apiv1 + "geeklist/66420"
             ic(metalist_url)
             metalist_request = requests.get(metalist_url)
             if metalist_request.status_code != 200:
@@ -138,7 +137,7 @@ class Generator:
     def _get_wishlist(self):
         while True:
             wishlist_url = (
-                self.root2
+                bgg.apiv2
                 + "collection?username={username}&wishlist=1".format(
                     username=self.username
                 )
@@ -163,7 +162,7 @@ class Generator:
         site_url = site_fmt.format(geeklist=game["auction_id"])
         item_link = link_fmt.format(geeklist=game["auction_id"], item=game["@id"])
         description = "{body}<br/><br/><hr><b>Auction Source:</b> {auction_title}<br/><b>Wishlist Level:</b> {wishlist_status}".format(
-            body=bbcode.render_html(game["body"]),
+            body=renderer.do_render(game["body"]),
             auction_title=game["auction_title"],
             wishlist_status=game["wishlist_status"],
         )
@@ -216,7 +215,7 @@ class Generator:
                 continue
 
             # Get games in new auctions.
-            auction_url = self.root + "geeklist/" + auction_id
+            auction_url = bgg.apiv1 + "geeklist/" + auction_id
             ic(auction_url)
             auction_request = requests.get(auction_url)
 
