@@ -27,6 +27,23 @@ def thing_renderer(tag_name, value, options, parent, context):
     )
 
 
+def size_renderer(tag_name, value, options, parent, context):
+    return f'<span style="font-size: {int(options["size"]) * 1.4}px>{value}</span>'
+
+
+def image_renderer(tag_name, value, options, parent, context):
+    return f'<a href="https://boardgamegeek.com/image/{options["imageid"]}">Image {options["imageid"]}</a>'
+
+
+def quote_renderer(tag_name, value, options, parent, context):
+    style = "background-color: lightgray; padding: 1rem; border: 1px solid gray;"
+    return f'<blockquote style="{style}">{value}</blockquote>'
+
+
+def strike_renderer(tag_name, value, options, parent, context):
+    return f"<s>{value}</s>"
+
+
 def do_render(input_text, **context):
     # Installing simple formatters.
     parser = bbcode.Parser()
@@ -35,6 +52,10 @@ def do_render(input_text, **context):
 
     # A custom render function.
     parser.add_formatter("thing", thing_renderer)
+    parser.add_formatter("size", size_renderer)
+    parser.add_formatter("imageid", image_renderer, standalone=True)
+    parser.add_formatter("q", quote_renderer)
+    parser.add_formatter("-", strike_renderer)
 
     # Calling format with context.
     return parser.format(input_text, **context)

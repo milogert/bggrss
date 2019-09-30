@@ -245,10 +245,7 @@ class Generator:
 
         with open(self.feed, "w") as fd:
             ic(fd.name)
-            if not debugging:
-                fd.write(feed_final)
-            else:
-                ic("skipping writing since debugging")
+            fd.write(feed_final)
 
         return feed_final
 
