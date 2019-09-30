@@ -11,8 +11,12 @@ import sqlite3
 import os
 from icecream import ic
 
-import renderer
-import bgg
+from generator import renderer
+from generator import bgg
+from generator import wishlist
+from generator import auctions
+
+# from generator import renderer, bgg
 
 debugging = True
 
@@ -111,35 +115,13 @@ class Generator:
 
             return xmltodict.parse(metalist_request.text)["geeklist"]
 
-    def _get_wishlist(self):
-        while True:
-            wishlist_url = (
-                bgg.apiv2
-                + "collection?username={username}&wishlist=1".format(
-                    username=self.username
-                )
-            )
-            ic(wishlist_url)
-            wishlist_request = requests.get(wishlist_url)
-            ic(wishlist_request.status_code)
-            if wishlist_request.status_code != 200:
-                time.sleep(1)
-                continue
-
-            wishlist_items = xmltodict.parse(wishlist_request.text)["items"]
-            if "item" not in wishlist_items:
-                ic("not a real wishlist item set", wishlist_items)
-                return {}
-
-            return wishlist_items["item"]
-
     def _convert_item(self, game):
         site_url = f"https://boardgamegeek.com/geeklist/{game['auction_id']}"
         item_url = site_url + f"/item/{game['@id']}#item{game['@id']}"
         description = (
             f"{renderer.do_render(game['body'])}<br/><br/>"
-            "<hr><b>Auction Source:</b> {game['auction_title']}<br/>"
-            "<b>Wishlist Level:</b> {game['wishlist_status']}"
+            f"<hr><b>Auction Source:</b> {game['auction_title']}<br/>"
+            f"<b>Wishlist Level:</b> {game['wishlist_status']}"
         )
         title = game["@objectname"]
         author = game["@username"]
@@ -232,33 +214,17 @@ class Generator:
         ic("going to post:", len(to_post.keys()))
 
         # Get games in wishlist.
-        wishlist_json = self._get_wishlist()
+        wishlist_json = wishlist.get()
 
         # Intersection between new auctions and wishlist.
-        wishlist_map = {i["@objectid"]: i for i in wishlist_json}
         games = []
 
         # Loop through all auctions to post.
         for auction_id, auction_data in to_post.items():
             # Loop through all items in the auction.
-            for item in auction_data["item"]:
-                try:
-                    item_id = item["@objectid"]
-                    if item_id in wishlist_map.keys():
-                        # Get the wishlist status.
-                        wishlist_status = wishlist_map[item_id]["status"][
-                            "@wishlistpriority"
-                        ]
-                        item.update(
-                            {
-                                "auction_id": auction_id,
-                                "wishlist_status": wishlist_status,
-                                "auction_title": auction_data["title"],
-                            }
-                        )
-                        games.append(item)
-                except:
-                    continue
+            games += auctions.wishlist_intersection(
+                wishlist_json, auction_id, auction_data
+            )
 
         # List of items.
         item_list = [self._convert_item(game) for game in games]
@@ -267,17 +233,15 @@ class Generator:
         description = "Aggregates auctions for " + self.username
         link = self.link
         items = "\n".join(item_list)
-        feed_final = (
-            f"<?xml version='1.0' encoding='UTF-8' ?>"
-            "<rss version='2.0'>"
-            "<channel>"
-            "<title>{title}</title>"
-            "<link>{link}</link>"
-            "<description>{description}</description>"
-            "{items}"
-            "</channel>"
-            "</rss>"
-        )
+        feed_final = f"""<?xml version='1.0' encoding='UTF-8' ?>
+            <rss version='2.0'>
+            <channel>
+            <title>{title}</title>
+            <link>{link}</link>
+            <description>{description}</description>
+            {items}
+            </channel>
+            </rss>"""
 
         with open(self.feed, "w") as fd:
             ic(fd.name)

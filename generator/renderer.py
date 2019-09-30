@@ -3,24 +3,14 @@ from icecream import ic
 import requests
 import time
 import xmltodict
-
-
-root2 = "https://boardgamegeek.com/xmlapi2/"
+from generator import bgg
+from generator import bgg_request
 
 
 def thing_renderer(tag_name, value, options, parent, context):
     ic(tag_name, value, options, parent, context)
-    thing_request = {}
-    while True:
-        thing_url = root2 + f"thing?id={options['thing']}"
-        ic(thing_url)
-        thing_request = requests.get(thing_url)
-        if thing_request.status_code != 200:
-            time.sleep(1)
-            continue
-        break
-
-    things_json = xmltodict.parse(thing_request.text)
+    thing_text = bgg_request.get(bgg.apiv2 + f"thing?id={options['thing']}")
+    things_json = xmltodict.parse(thing_text)
     thing_json = things_json["items"]["item"]
     thing_type = thing_json["@type"]
     thing_id = thing_json["@id"]
