@@ -2,7 +2,6 @@
 
 import datetime
 import math
-import bbcode
 import requests
 import xmltodict
 import json
@@ -12,39 +11,20 @@ import sqlite3
 import os
 from icecream import ic
 
-debugging = False
+from generator import renderer
+from generator import bgg
+from generator import wishlist
+from generator import auctions
+
+# from generator import renderer, bgg
+
+debugging = True
 
 
 class Generator:
     __location__ = os.path.realpath(
         os.path.join(os.getcwd(), os.path.dirname(__file__))
     )
-
-    root = "http://boardgamegeek.com/xmlapi/"
-    root2 = "https://boardgamegeek.com/xmlapi2/"
-
-    feed_tmpl = """<?xml version="1.0" encoding="UTF-8" ?>
-    <rss version="2.0">
-
-    <channel>
-      <title>{title}</title>
-      <link>{link}</link>
-      <description>{description}</description>
-      {items}
-    </channel>
-
-    </rss>"""
-
-    item_tmpl = """
-      <item>
-        <id>{id}</id>
-        <title>{title}</title>
-        <link>{link}</link>
-        <author>{author}</author>
-        <description>{description}</description>
-        <pubDate>{pubDate}</pubDate>
-        <site_url>{site_url}</site_url>
-      </item>"""
 
     username = None
     users_dir = os.path.join(__location__, "users")
@@ -95,7 +75,7 @@ class Generator:
                 ).format(
                     username_n=self.username,
                     time_n=math.ceil(time.time()),
-                    **self.k_table_dict
+                    **self.k_table_dict,
                 )
             )
             self.db.commit()
@@ -119,14 +99,14 @@ class Generator:
                 ).format(
                     time_n=math.ceil(time.time()),
                     username_q=self.username,
-                    **self.k_table_dict
+                    **self.k_table_dict,
                 )
             )
             self.db.commit()
 
     def _get_metalist(self):
         while True:
-            metalist_url = self.root + "geeklist/66420"
+            metalist_url = bgg.apiv1 + "geeklist/66420"
             ic(metalist_url)
             metalist_request = requests.get(metalist_url)
             if metalist_request.status_code != 200:
@@ -135,47 +115,28 @@ class Generator:
 
             return xmltodict.parse(metalist_request.text)["geeklist"]
 
-    def _get_wishlist(self):
-        while True:
-            wishlist_url = (
-                self.root2
-                + "collection?username={username}&wishlist=1".format(
-                    username=self.username
-                )
-            )
-            ic(wishlist_url)
-            wishlist_request = requests.get(wishlist_url)
-            ic(wishlist_request.status_code)
-            if wishlist_request.status_code != 200:
-                time.sleep(1)
-                continue
-
-            wishlist_items = xmltodict.parse(wishlist_request.text)["items"]
-            if "item" not in wishlist_items:
-                ic("not a real wishlist item set", wishlist_items)
-                return self.feed_tmpl
-
-            return wishlist_items["item"]
-
     def _convert_item(self, game):
-        site_fmt = "https://boardgamegeek.com/geeklist/{geeklist}"
-        link_fmt = site_fmt + "/item/{item}#item{item}"
-        site_url = site_fmt.format(geeklist=game["auction_id"])
-        item_link = link_fmt.format(geeklist=game["auction_id"], item=game["@id"])
-        description = "{body}<br/><br/><hr><b>Auction Source:</b> {auction_title}<br/><b>Wishlist Level:</b> {wishlist_status}".format(
-            body=bbcode.render_html(game["body"]),
-            auction_title=game["auction_title"],
-            wishlist_status=game["wishlist_status"],
+        site_url = f"https://boardgamegeek.com/geeklist/{game['auction_id']}"
+        item_url = site_url + f"/item/{game['@id']}#item{game['@id']}"
+        description = (
+            f"{renderer.do_render(game['body'])}<br/><br/>"
+            f"<hr><b>Auction Source:</b> {game['auction_title']}<br/>"
+            f"<b>Wishlist Level:</b> {game['wishlist_status']}"
         )
-        return self.item_tmpl.format(
-            id=game["auction_id"] + "_" + game["@id"],
-            title=game["@objectname"],
-            link=item_link,
-            author=game["@username"],
-            description=escape(description),
-            pubDate=game["@postdate"],
-            site_url=site_url,
-        )
+        title = game["@objectname"]
+        author = game["@username"]
+        pubDate = game["@postdate"]
+        return f"""
+            <item>
+                <id>{game["auction_id"] + "_" + game["@id"]}</id>
+                <title>{title}</title>
+                <link>{item_url}</link>
+                <author>{author}</author>
+                <description>{escape(description)}</description>
+                <pubDate>{pubDate}</pubDate>
+                <site_url>{site_url}</site_url>
+            </item>
+        """
 
     def generate(self):
         self._update_last_time()
@@ -216,7 +177,7 @@ class Generator:
                 continue
 
             # Get games in new auctions.
-            auction_url = self.root + "geeklist/" + auction_id
+            auction_url = bgg.apiv1 + "geeklist/" + auction_id
             ic(auction_url)
             auction_request = requests.get(auction_url)
 
@@ -229,7 +190,7 @@ class Generator:
             try:
                 auction_json = xmltodict.parse(auction_data)["geeklist"]
                 # ic(auction_json)
-                ic("processed {}\t {}".format(auction_id, auction_json["title"]))
+                ic(f"processed {auction_id}\t {auction_json['title']}")
             except Exception as e:
                 ic("failure to process auction", auction_request.status_code, e)
                 counter = counter + 1
@@ -253,50 +214,38 @@ class Generator:
         ic("going to post:", len(to_post.keys()))
 
         # Get games in wishlist.
-        wishlist_json = self._get_wishlist()
+        wishlist_json = wishlist.get()
 
         # Intersection between new auctions and wishlist.
-        wishlist_map = {i["@objectid"]: i for i in wishlist_json}
         games = []
 
         # Loop through all auctions to post.
         for auction_id, auction_data in to_post.items():
             # Loop through all items in the auction.
-            for item in auction_data["item"]:
-                try:
-                    item_id = item["@objectid"]
-                    if item_id in wishlist_map.keys():
-                        # Get the wishlist status.
-                        wishlist_status = wishlist_map[item_id]["status"][
-                            "@wishlistpriority"
-                        ]
-                        item.update(
-                            {
-                                "auction_id": auction_id,
-                                "wishlist_status": wishlist_status,
-                                "auction_title": auction_data["title"],
-                            }
-                        )
-                        games.append(item)
-                except:
-                    continue
+            games += auctions.wishlist_intersection(
+                wishlist_json, auction_id, auction_data
+            )
 
         # List of items.
         item_list = [self._convert_item(game) for game in games]
 
-        feed_final = self.feed_tmpl.format(
-            title=self.username + "'s Wishlist-Auction Matches",
-            description="Aggregates auctions for " + self.username,
-            link=self.link,
-            items="\n".join(item_list),
-        )
+        title = self.username + "'s Wishlist-Auction Matches"
+        description = "Aggregates auctions for " + self.username
+        link = self.link
+        items = "\n".join(item_list)
+        feed_final = f"""<?xml version='1.0' encoding='UTF-8' ?>
+            <rss version='2.0'>
+            <channel>
+            <title>{title}</title>
+            <link>{link}</link>
+            <description>{description}</description>
+            {items}
+            </channel>
+            </rss>"""
 
         with open(self.feed, "w") as fd:
             ic(fd.name)
-            if not debugging:
-                fd.write(feed_final)
-            else:
-                ic("skipping writing since debugging")
+            fd.write(feed_final)
 
         return feed_final
 
