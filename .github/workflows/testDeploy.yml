@@ -6,9 +6,8 @@ on:
       - master
 
 jobs:
-  testDeploy:
+  test:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout master
       uses: actions/checkout@master
@@ -20,6 +19,10 @@ jobs:
       run: pipenv install
     - name: Test
       run: pipenv run pytest
+  deploy:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
     - name: Deploy
       uses: maddox/actions/ssh@master
       env:
