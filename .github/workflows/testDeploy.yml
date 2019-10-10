@@ -12,11 +12,10 @@ jobs:
     steps:
     - name: Checkout master
       uses: actions/checkout@master
+    - name: Install env
+      run: pipenv install
     - name: Test
-      uses: docker/whalesay@master
-      with:
-        entrypoint: cowsay
-        args: TEST HERE
+      run: pipenv run test
     - name: Deploy
       uses: maddox/actions/ssh@master
       env:
