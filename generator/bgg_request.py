@@ -1,5 +1,6 @@
 import requests
 from icecream import ic
+import time
 
 
 def get(url, sleep=1, retries=0):
