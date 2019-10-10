@@ -18,10 +18,10 @@ def test_size():
     assert renderer.do_render(f"[size={size}]{value}[/size]") == exp
 
 
-def test_image():
-    id = 100
+@pytest.mark.parametrize("tag, id", [("ImageID", 100), ("imageid", 1000)])
+def test_image(tag, id):
     exp = f'<a href="https://boardgamegeek.com/image/{id}">Image {id}</a>'
-    assert renderer.do_render(f"[imageid={id}]") == exp
+    assert renderer.do_render(f"[{tag}={id}]") == exp
 
 
 def test_quote():
