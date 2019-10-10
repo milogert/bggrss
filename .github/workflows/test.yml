@@ -3,7 +3,7 @@ name: Test everything
 on:
   push:	
     branches:	
-      - *
+      - '*'
 
 jobs:
   test:
