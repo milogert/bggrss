@@ -33,7 +33,7 @@ Flask = "==0.12.2"
 Jinja2 = "==2.9.6"
 MarkupSafe = "==1.1.1"
 Pygments = "==2.4.2"
-Werkzeug = "==0.12.2"
+Werkzeug = "==0.15.3"
 
 [requires]
 python_version = "3.7"
