@@ -21,7 +21,7 @@ def test_size():
 def test_image():
     id = 100
     exp = f'<a href="https://boardgamegeek.com/image/{id}">Image {id}</a>'
-    assert renderer.do_render(f"[imageid={id}]") == exp
+    assert renderer.do_render(f"[ImageID={id}]") == exp
 
 
 def test_quote():

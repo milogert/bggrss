@@ -53,7 +53,7 @@ def do_render(input_text, **context):
     # A custom render function.
     parser.add_formatter("thing", thing_renderer)
     parser.add_formatter("size", size_renderer)
-    parser.add_formatter("imageid", image_renderer, standalone=True)
+    parser.add_formatter("ImageID", image_renderer, standalone=True)
     parser.add_formatter("q", quote_renderer)
     parser.add_formatter("-", strike_renderer)
 
