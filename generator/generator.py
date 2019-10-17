@@ -18,7 +18,7 @@ from generator import auctions
 
 # from generator import renderer, bgg
 
-debugging = True
+debugging = False
 
 
 class Generator:
