@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "87b5e373ace3e5ea5b02f50e5f421a7566bb3884e75ceff69ab3795b76523a90"
+            "sha256": "192b9012d5844dab344025ee5df21dc44e86a0e0482e72d0694667569d5358f8"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -41,10 +41,10 @@
         },
         "bbcode": {
             "hashes": [
-                "sha256:2366956029431b1ffe0c67f1844a5eebcda6fd82007b9e18fdb9abd2ec081b16"
+                "sha256:29fd872b4b06bb35dcb5307bb81d4808e325d34e2df8d5d351c5db24d73e25e8"
             ],
             "index": "pypi",
-            "version": "==1.0.25"
+            "version": "==1.0.33"
         },
         "certifi": {
             "hashes": [
