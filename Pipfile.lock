@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e9808318a67d6a9ba22af74ef96b43a19b0eeee7239c4e4827a3eec43cb07883"
+            "sha256": "fc0999a8d6270279234296f0f71c75e619404f65e658bf9c9150f8d13d077451"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,13 @@
         ]
     },
     "default": {
+        "asttokens": {
+            "hashes": [
+                "sha256:61529725926378f2d0497d970d243cab68c39d6374dfc0bd7976e29296fb7843",
+                "sha256:a1a74e9a9017be0ff9ebcbc18d2fce7665506cb2608b74888105262b9c5d12f7"
+            ],
+            "version": "==2.0.2"
+        },
         "atomicwrites": {
             "hashes": [
                 "sha256:03472c30eb2c5d1ba9227e4c2ca66ab8287fbfbbda3888aa93dc2e28fc6811b4",
@@ -71,6 +78,12 @@
             "index": "pypi",
             "version": "==0.4.1"
         },
+        "executing": {
+            "hashes": [
+                "sha256:d55c219ec7df0913472bb20e5a96242d855f95f19fde4862b435b6a4ea6fa151"
+            ],
+            "version": "==0.3.2"
+        },
         "flask": {
             "hashes": [
                 "sha256:0749df235e3ff61ac108f69ac178c9770caeaccad2509cb762ce1f65570a8856",
@@ -81,11 +94,11 @@
         },
         "icecream": {
             "hashes": [
-                "sha256:2f47e967bb5d2cf67cdb68cfb02b2e4adbe44f3e77f234559db33a2f1b40a0e6",
-                "sha256:859ae6679ef00b7bb9b3c3c0aded7970af487ebf91e306aa9ff98fbbaf8f2a47"
+                "sha256:434e14a50da01f9dc1e5757efec7613db5df048ebdcecd460236db41688f779a",
+                "sha256:9000acd16dc9d3c78a95ac9abc54c172e4f47fbd54541ab10d280fae5bfb8efa"
             ],
             "index": "pypi",
-            "version": "==1.5.0"
+            "version": "==2.0.0"
         },
         "idna": {
             "hashes": [
