@@ -13,7 +13,7 @@ icecream==2.0.0
 idna==2.5
 importlib-metadata==0.23
 itsdangerous==1.1.0
-jinja2==2.10.1
+jinja2==2.10.3
 markupsafe==1.1.1
 more-itertools==7.2.0
 packaging==19.2
