@@ -16,10 +16,6 @@ from generator import bgg
 from generator import wishlist
 from generator import auctions
 
-# from generator import renderer, bgg
-
-debugging = False
-
 
 class Generator:
     __location__ = os.path.realpath(
@@ -36,7 +32,9 @@ class Generator:
     k_username = 0
     k_time = 1
 
-    def __init__(self, username, link=""):
+    debugging = False
+
+    def __init__(self, username, link="", debugging=False):
         self.username = username
         self.link = link
         self.old = os.path.join(self.users_dir, self.username + "_old")
@@ -44,6 +42,7 @@ class Generator:
         db_path = os.path.join(self.users_dir, "db.sqlite")
         ic(db_path)
         self.db = sqlite3.connect(db_path)
+        self.debugging = debugging
 
         # Create the table if it does not exist.
         c = self.db.cursor()
@@ -156,7 +155,7 @@ class Generator:
 
         # Get new auctions (just one to start).
         counter = 0
-        counter_limit = 10 if debugging else len(metalist_json["item"])
+        counter_limit = 10 if self.debugging else len(metalist_json["item"])
         ic("checking auctions... ")
         while counter < counter_limit:
             item = metalist_json["item"][counter]
@@ -166,7 +165,7 @@ class Generator:
             # Skip this auction if we have already looked at it.
             is_old = auction_id in old
             is_closed = "closed" in item["@objectname"].lower()
-            if (is_old or is_closed) and not debugging:
+            if (is_old or is_closed) and not self.debugging:
                 label = "other"
                 if is_old:
                     label = "old"
@@ -201,13 +200,13 @@ class Generator:
 
             # Pull and parse the text.
             # Pull all the games in from this auction into a specific dict.
-            if not debugging:
+            if not self.debugging:
                 old.append(auction_id)
             to_post[auction_id] = auction_json
             time.sleep(0.25)
 
         # Write out the old ids.
-        if not debugging:
+        if not self.debugging:
             ic("writing processed auctions to", self.old)
             json.dump(old, open(self.old, "w"))
 
