@@ -1,0 +1,9 @@
+version: '3'
+services:
+  bggrss:
+    build: .
+    image: bggrss_app
+    command: flask run
+    environment:
+      - TZ=America/Chicago
+    network_mode: host

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>58 bytes of css to look great nearly everywhere</title>
+        <meta name="viewport" content="width=device-width">
+        <link rel="icon" href="data:,">
+        <link rel="stylesheet" href="https://jrl.ninja/etc/post.css">
+    </head>
+    <body>
+        <main>
+            <h1>BGG Auction Feed</h1>
+            <h2>What should I do?</h2>
+            <ol>
+                <li>
+                    <div>
+                        <p>Enter your BGG username</p>
+                        <label for="username">BGG Username</label>
+                        <input id="username" />
+                    </div>
+                </li>
+                <li>
+                    <p>Here is your feed link</p>
+                    <pre class="fancy"><code>https://bggrss.milogert.com/rss/<span id="url">...</span></code></pre>
+                </li>
+                <li>Add that link to your feed reader.</li>
+            </ol>
+            
+            <h2>What is this?</h2>
+            <h3>This page?</h3>
+            <p>Not much. Just an html page with a tiny bit of javascript that makes things a little fancier.</p>
+
+            <h3>I meant the whole service.</h3>
+            <p>The BGGRSS service takes the username you entered, gets the associated wishlist (things specifically set to be on your wishlist, not your "want in trade list" or whatever), compares that list with all of the currently open auctions, and sends any matches to the RSS feed that is associated with the username you entered.</p>
+
+            <h3>Why?</h3>
+            <p>Get the jump on all the great auctions that are floating around BGG!</p>
+
+            <h2>Hey, I have a suggestion and...</h2>
+            <h3>I am willing to do some programming</h3>
+            <p>Feel free to <a href="https://github.com/milogert/bggrss/compare">shoot me a PR</a> with some changes and we can discuss! I am always open to improvements.</p>
+
+            <h3>I am way too busy bidding on auctions to develop!</h3>
+            <p>Open an issue <a href="https://github.com/milogert/bggrss/issues/new">here</a> and I'll see what I can do.</p>
+
+            <h3>I don't like the other options but I love the service!</h3>
+            <p>Email me at <code>milo [plus] bggrss [at] milogert [dot] com</code>. We can chat there!</p>
+
+            <h3>I don't have email!</h3>
+            <p>Send me a message on <a href="https://boardgamegeek.com/geekmail/compose?touser=miloshot">BGG</a>.
+
+            <h2>Some links</h2>
+            <p>
+                <a href="https://github.com/milogert/bggrss">github</a>
+                <a href="https://boardgamegeek.com/user/miloshot">bgg profile</a>
+            </p>
+        </main>
+        <script>
+            const username = document.querySelector('#username');
+            const rssLink = document.querySelector('#url');
+
+            const typeHandler = e => {
+              rssLink.innerHTML = e.target.value;
+            }
+
+            username.addEventListener('input', typeHandler)
+        </script>
+    </body>
+</html>
