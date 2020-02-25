@@ -12,6 +12,7 @@ def wishlist_intersection(wishlist_json, auction_id, auction_data):
                         "auction_id": auction_id,
                         "wishlist_status": wishlist_status,
                         "auction_title": auction_data["title"],
+                        "game_object_id": item_id,
                     }
                 )
                 games_matched.append(item)

@@ -6,15 +6,14 @@ import requests
 import xmltodict
 import json
 import time
-from xml.sax.saxutils import escape
 import sqlite3
 import os
 from icecream import ic
 
-from generator import renderer
 from generator import bgg
 from generator import wishlist
 from generator import auctions
+from generator import templates
 
 
 class Generator:
@@ -35,6 +34,7 @@ class Generator:
     debugging = False
 
     def __init__(self, username, link="", debugging=False):
+        print("GENERATING")
         self.username = username
         self.link = link
         self.old = os.path.join(self.users_dir, self.username + "_old")
@@ -65,29 +65,18 @@ class Generator:
             )
         )
         row = c.fetchone()
-        if not row:
-            ic("no row found, inserting")
-            c.execute(
-                (
-                    "INSERT INTO {tn} ({username}, {time})"
-                    'VALUES ("{username_n}", {time_n})'
-                ).format(
-                    username_n=self.username,
-                    time_n=math.ceil(time.time()),
-                    **self.k_table_dict,
-                )
-            )
-            self.db.commit()
-        else:
-            ic("row found")
+        if ic(row):
             # Get the date from the row.
             prev_time = datetime.datetime.fromtimestamp(row[self.k_time])
             minimum_next_time = prev_time + datetime.timedelta(minutes=5)
             if datetime.datetime.now() < minimum_next_time:
-                with open(self.feed) as fd:
-                    ic("returning cached feed")
-                    ic(self.feed)
-                    return fd.read()
+                try:
+                    with open(self.feed) as fd:
+                        ic("returning cached feed")
+                        ic(self.feed)
+                        return fd.read()
+                except FileNotFoundError:
+                    id("FILE IS MISSING")
 
             ic("updating row")
             c.execute(
@@ -98,6 +87,19 @@ class Generator:
                 ).format(
                     time_n=math.ceil(time.time()),
                     username_q=self.username,
+                    **self.k_table_dict,
+                )
+            )
+            self.db.commit()
+        else:
+            ic("no row found, inserting")
+            c.execute(
+                (
+                    "INSERT INTO {tn} ({username}, {time})"
+                    'VALUES ("{username_n}", {time_n})'
+                ).format(
+                    username_n=self.username,
+                    time_n=math.ceil(time.time()),
                     **self.k_table_dict,
                 )
             )
@@ -115,27 +117,28 @@ class Generator:
             return xmltodict.parse(metalist_request.text)["geeklist"]
 
     def _convert_item(self, game):
+        ic(game)
         site_url = f"https://boardgamegeek.com/geeklist/{game['auction_id']}"
         item_url = site_url + f"/item/{game['@id']}#item{game['@id']}"
-        description = (
-            f"{renderer.do_render(game['body'])}<br/><br/>"
-            f"<hr><b>Auction Source:</b> {game['auction_title']}<br/>"
-            f"<b>Wishlist Level:</b> {game['wishlist_status']}"
-        )
         title = game["@objectname"]
+        item_body = templates.item_body(
+            game["body"],
+            game["auction_title"],
+            game_link=f'https://boardgamegeek.com/boardgame/{game["game_object_id"]}',
+            game_title=title,
+            wishlist_level=game["wishlist_status"],
+        )
         author = game["@username"]
         pubDate = game["@postdate"]
-        return f"""
-            <item>
-                <id>{game["auction_id"] + "_" + game["@id"]}</id>
-                <title>{title}</title>
-                <link>{item_url}</link>
-                <author>{author}</author>
-                <description>{escape(description)}</description>
-                <pubDate>{pubDate}</pubDate>
-                <site_url>{site_url}</site_url>
-            </item>
-        """
+        return templates.item(
+            game["auction_id"] + "_" + game["@id"],
+            title,
+            item_url,
+            author,
+            item_body,
+            pubDate,
+            site_url,
+        )
 
     def generate(self):
         self._update_last_time()
@@ -213,7 +216,7 @@ class Generator:
         ic("going to post:", len(to_post.keys()))
 
         # Get games in wishlist.
-        wishlist_json = wishlist.get()
+        wishlist_json = wishlist.get(self.username)
 
         # Intersection between new auctions and wishlist.
         games = []
@@ -226,22 +229,12 @@ class Generator:
             )
 
         # List of items.
-        item_list = [self._convert_item(game) for game in games]
+        items = [self._convert_item(game) for game in games]
 
         title = self.username + "'s Wishlist-Auction Matches"
         description = "Aggregates auctions for " + self.username
         link = self.link
-        items = "\n".join(item_list)
-        feed_final = f"""<?xml version='1.0' encoding='UTF-8' ?>
-            <rss version='2.0'>
-            <channel>
-            <title>{title}</title>
-            <link>{link}</link>
-            <description>{description}</description>
-            {items}
-            </channel>
-            </rss>"""
-
+        feed_final = templates.feed(title, link, description, items)
         with open(self.feed, "w") as fd:
             ic(fd.name)
             fd.write(feed_final)

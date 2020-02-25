@@ -10,5 +10,6 @@ RUN pip install -r requirements.txt
 COPY . .
 
 ENV FLASK_APP web.py
+ENV PYTHONUNBUFFERED 0
 
 CMD [ "flask", "run", "--host=0.0.0.0" ]

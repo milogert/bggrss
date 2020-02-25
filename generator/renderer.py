@@ -23,12 +23,12 @@ def thing_renderer(tag_name, value, options, parent, context):
         thing_name = name["@value"]
 
     return (
-        f'<a href="https://boardgamegeek.com/{thing_type}/{thing_id}>{thing_name}</a>'
+        f'<a href="https://boardgamegeek.com/{thing_type}/{thing_id}">{thing_name}</a>'
     )
 
 
 def size_renderer(tag_name, value, options, parent, context):
-    return f'<span style="font-size: {int(options["size"]) * 1.4}px>{value}</span>'
+    return f'<span style="font-size: {int(options["size"]) * 1.4}px">{value}</span>'
 
 
 def image_renderer(tag_name, value, options, parent, context):

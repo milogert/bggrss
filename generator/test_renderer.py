@@ -7,14 +7,14 @@ import pytest
     [(276169, "", "For What Remains"), (276169, "Custom Title", "Custom Title")],
 )
 def test_thing(id, name, title):
-    exp = f'<a href="https://boardgamegeek.com/boardgame/{id}>{title}</a>'
+    exp = f'<a href="https://boardgamegeek.com/boardgame/{id}">{title}</a>'
     assert renderer.do_render(f"[thing={id}]{name}[/thing]") == exp
 
 
 def test_size():
     size = 1
     value = "test"
-    exp = f'<span style="font-size: 1.4px>{value}</span>'
+    exp = f'<span style="font-size: 1.4px">{value}</span>'
     assert renderer.do_render(f"[size={size}]{value}[/size]") == exp
 
 
