@@ -3,7 +3,10 @@ services:
   bggrss:
     build: .
     image: bggrss_app
-    command: flask run
+    command: flask run --host=0.0.0.0
     environment:
       - TZ=America/Chicago
-    network_mode: host
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app

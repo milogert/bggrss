@@ -44,6 +44,10 @@ def strike_renderer(tag_name, value, options, parent, context):
     return f"<s>{value}</s>"
 
 
+def bgcolor_renderer(tag_name, value, options, parent, context):
+    return f"<span style='background-color: {options['bgcolor']};'>{value}</span>"
+
+
 def do_render(input_text, **context):
     # Installing simple formatters.
     parser = bbcode.Parser()
@@ -57,6 +61,7 @@ def do_render(input_text, **context):
     parser.add_formatter("ImageID", image_renderer, standalone=True)
     parser.add_formatter("q", quote_renderer)
     parser.add_formatter("-", strike_renderer)
+    parser.add_formatter("bgcolor", bgcolor_renderer)
 
     # Calling format with context.
     return parser.format(input_text, **context)

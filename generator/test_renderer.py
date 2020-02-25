@@ -35,3 +35,10 @@ def test_strike():
     value = "test"
     exp = f"<s>{value}</s>"
     assert renderer.do_render(f"[-]{value}[/-]") == exp
+
+
+@pytest.mark.parametrize("color", [("red"), ("#FFFFFF"), ("#aaa")])
+def test_bgcolor(color):
+    value = "test"
+    exp = f"<span style='background-color: {color};'>{value}</span>"
+    assert renderer.do_render(f"[bgcolor={color}]{value}[/bgcolor]") == exp

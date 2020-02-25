@@ -7,6 +7,11 @@ from generator import generator
 app = Flask(__name__)
 
 
+@app.route("/")
+def index():
+    return app.send_static_file("index.html")
+
+
 @app.route("/rss", defaults={"username": ""})
 @app.route("/rss/<username>")
 def rss(username):
