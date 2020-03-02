@@ -1,24 +1,37 @@
+import base64
 import bbcode
 from icecream import ic
 import requests
 import time
 from xml.sax.saxutils import escape
+
 from generator import renderer
-import base64
 
 
-def item_body(body, auction_title, game_link="", game_title="", wishlist_level=-1):
+def item_body(
+    body,
+    auction_title,
+    game_link="",
+    game_title="",
+    wishlist_level=-1,
+    include_hashed_content=False,
+):
     rendered_body = renderer.do_render(body)
     ic(game_title)
     return "".join(
         [
             f"{rendered_body}<br/><br/>",
-            f"<hr><b>Auction Source:</b> {auction_title}<br/>",
-            f"<b>Game Link:</b> <a href='{game_link}'>{game_title}</a><br/>"
+            f"<hr>",
+            f"<div><b>Auction Source:</b> {auction_title}</div>",
+            f"<div><b>Game Link:</b> <a href='{game_link}'>{game_title}</a></div>"
             if game_link
             else "",
-            f"<b>Wishlist Level:</b> {wishlist_level}" if wishlist_level else "",
-            f"<div class='original_body' style='display: none;'>{base64.b64encode(body.encode())}</div>",
+            f"<div><b>Wishlist Level:</b> {wishlist_level}</div>"
+            if wishlist_level
+            else "",
+            f"<hr><h3>Original Content</h3><pre>{base64.b64encode(body.encode())}</pre>"
+            if include_hashed_content
+            else "",
         ]
     )
 

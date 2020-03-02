@@ -3,6 +3,18 @@ import pytest
 
 
 @pytest.mark.parametrize(
+    "url, title",
+    [
+        ("/boardgameversion/368897/german-edition", "German Version"),
+        ("/boardgame/276169", "Custom Title"),
+    ],
+)
+def test_geekurl(url, title):
+    exp = f'<a href="https://boardgamegeek.com{url}">{title}</a>'
+    assert renderer.do_render(f"[geekurl={url}]{title}[/geekurl]") == exp
+
+
+@pytest.mark.parametrize(
     "id, name, title",
     [(276169, "", "For What Remains"), (276169, "Custom Title", "Custom Title")],
 )

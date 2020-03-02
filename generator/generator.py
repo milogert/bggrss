@@ -27,14 +27,23 @@ class Generator:
     feed = None
 
     db = None
+    k_tables = {
+        "timer": {"tn": "timer", "username": "username", "time": "last_request_time"},
+        "old_auctions": {
+            "tn": "old_auctions",
+            "username": "username",
+            "auction_id": "auction_id",
+        },
+    }
     k_table_dict = {"tn": "timer", "username": "username", "time": "last_request_time"}
     k_username = 0
     k_time = 1
 
     debugging = False
+    feed_debugging = False
 
-    def __init__(self, username, link="", debugging=False):
-        print("GENERATING")
+    def __init__(self, username, link="", debugging=False, feed_debugging=False):
+        ic("generator init", username, link, debugging, feed_debugging)
         self.username = username
         self.link = link
         self.old = os.path.join(self.users_dir, self.username + "_old")
@@ -43,6 +52,7 @@ class Generator:
         ic(db_path)
         self.db = sqlite3.connect(db_path)
         self.debugging = debugging
+        self.feed_debugging = feed_debugging
 
         # Create the table if it does not exist.
         c = self.db.cursor()
@@ -52,7 +62,15 @@ class Generator:
                 "{username} TEXT UNIQUE NOT NULL,"
                 "{time} INTEGER"
                 ")"
-            ).format(**self.k_table_dict)
+            ).format(**self.k_tables["timer"])
+        )
+        c.execute(
+            (
+                "CREATE TABLE IF NOT EXISTS {tn} ("
+                "{username} TEXT NOT NULL,"
+                "{auction_id} TEXT NOT NULL"
+                ")"
+            ).format(**self.k_tables["old_auctions"])
         )
         self.db.commit()
 
@@ -127,6 +145,7 @@ class Generator:
             game_link=f'https://boardgamegeek.com/boardgame/{game["game_object_id"]}',
             game_title=title,
             wishlist_level=game["wishlist_status"],
+            include_hashed_content=self.feed_debugging,
         )
         author = game["@username"]
         pubDate = game["@postdate"]
@@ -140,6 +159,26 @@ class Generator:
             site_url,
         )
 
+    def _get_old_auctions(self):
+        c = self.db.cursor()
+        c.execute(
+            'SELECT {auction_id} FROM {tn} WHERE {username}="{username_q}"'.format(
+                username_q=self.username, **self.k_tables["old_auctions"]
+            )
+        )
+        return [i[0] for i in c.fetchall()]
+
+    def _update_old_auctions(self, old_auctions):
+        c = self.db.cursor()
+        for auction_id in old_auctions:
+            c.execute(
+                "INSERT INTO {tn} values (?, ?)".format(
+                    **self.k_tables["old_auctions"]
+                ),
+                (self.username, auction_id),
+            )
+        self.db.commit()
+
     def generate(self):
         self._update_last_time()
 
@@ -147,23 +186,16 @@ class Generator:
         metalist_json = self._get_metalist()
 
         # Create datastructure for auctions.
-        old = []
-        try:
-            with open(self.old) as old_fd:
-                old = json.load(old_fd)
-            ic(old_fd, old)
-        except (IOError, TypeError) as e:
-            ic("new `old` array", e.strerror)
+        old = ic(self._get_old_auctions())
         to_post = {}
 
         # Get new auctions (just one to start).
-        counter = 0
-        counter_limit = 10 if self.debugging else len(metalist_json["item"])
-        ic("checking auctions... ")
-        while counter < counter_limit:
-            item = metalist_json["item"][counter]
+        for item in metalist_json["item"]:
             auction_id = item["@objectid"]
-            ic(auction_id)
+
+            if item["@objecttype"] != "geeklist":
+                ic(auction_id, "skipping item", item["@objecttype"])
+                continue
 
             # Skip this auction if we have already looked at it.
             is_old = auction_id in old
@@ -174,44 +206,40 @@ class Generator:
                     label = "old"
                 elif is_closed:
                     label = "closed"
-                ic(label)
-                counter = counter + 1
+                ic(auction_id, label)
                 continue
 
             # Get games in new auctions.
             auction_url = bgg.apiv1 + "geeklist/" + auction_id
-            ic(auction_url)
-            auction_request = requests.get(auction_url)
+            ic(auction_id, auction_url)
 
-            # Move to the next loop if we are accepted but processing.
-            if auction_request.status_code == 202:
-                ic(auction_id)
-                continue
+            # Get the auction and wait for a good status code.
+            auction_request = requests.get(auction_url)
+            while auction_request.status_code == 202:
+                auction_request = requests.get(auction_url)
+                ic(auction_id, auction_request.status_code)
 
             auction_data = auction_request.text
             try:
                 auction_json = xmltodict.parse(auction_data)["geeklist"]
-                # ic(auction_json)
-                ic(f"processed {auction_id}\t {auction_json['title']}")
+                ic(auction_id, f"processed", auction_json["title"])
             except Exception as e:
-                ic("failure to process auction", auction_request.status_code, e)
-                counter = counter + 1
+                ic(
+                    auction_id,
+                    "failure to process auction",
+                    auction_request.status_code,
+                    e,
+                )
                 continue
-
-            # Increment the counter.
-            counter = counter + 1
 
             # Pull and parse the text.
             # Pull all the games in from this auction into a specific dict.
-            if not self.debugging:
-                old.append(auction_id)
             to_post[auction_id] = auction_json
             time.sleep(0.25)
 
         # Write out the old ids.
         if not self.debugging:
-            ic("writing processed auctions to", self.old)
-            json.dump(old, open(self.old, "w"))
+            self._update_old_auctions(to_post.keys())
 
         ic("going to post:", len(to_post.keys()))
 
@@ -235,9 +263,10 @@ class Generator:
         description = "Aggregates auctions for " + self.username
         link = self.link
         feed_final = templates.feed(title, link, description, items)
-        with open(self.feed, "w") as fd:
-            ic(fd.name)
-            fd.write(feed_final)
+        if self.feed_debugging:
+            with open(self.feed, "w") as fd:
+                ic(fd.name)
+                fd.write(feed_final)
 
         return feed_final
 

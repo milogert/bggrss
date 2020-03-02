@@ -7,6 +7,10 @@ from generator import bgg
 from generator import bgg_request
 
 
+def geekurl_renderer(tag_name, value, options, parent, context):
+    return f'<a href="https://boardgamegeek.com{options["geekurl"]}">{value}</a>'
+
+
 def thing_renderer(tag_name, value, options, parent, context):
     ic(tag_name, value, options, parent, context)
     thing_text = bgg_request.get(bgg.apiv2 + f"thing?id={options['thing']}")
@@ -55,6 +59,7 @@ def do_render(input_text, **context):
     # parser.add_simple_formatter('thing', '<a>%(value)s</sub>')
 
     # A custom render function.
+    parser.add_formatter("geekurl", geekurl_renderer)
     parser.add_formatter("thing", thing_renderer)
     parser.add_formatter("size", size_renderer)
     parser.add_formatter("imageid", image_renderer, standalone=True)

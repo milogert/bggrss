@@ -2,6 +2,8 @@
 
 from flask import Flask, request, redirect, Response
 from flask import render_template as rt
+from icecream import ic
+
 from generator import generator
 
 app = Flask(__name__)
@@ -18,6 +20,13 @@ def rss(username):
     if not username:
         return redirect("/")
 
-    res = Response(generator.Generator(username, link=request.url).generate())
+    ic(request.args)
+    res = Response(
+        generator.Generator(
+            username,
+            link=request.url,
+            feed_debugging=request.args.get("debug", default=False, type=bool),
+        ).generate()
+    )
     res.headers["Content-Type"] = "application/xml"
     return res
