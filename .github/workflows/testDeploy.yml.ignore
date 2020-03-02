@@ -31,4 +31,4 @@ jobs:
         HOST: ${{ secrets.HOST }}
         USER: ${{ secrets.USER }}
       with:
-        args: "cd bggrss && git pull && sudo systemctl restart bggrss.service"
+        args: "cd bggrss && git pull && sudo systemctl restart docker-compose@bggrss.service"
